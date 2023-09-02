@@ -3,10 +3,6 @@ name = "cereal"
 version = "0.1.0"
 edition = "2021"
 
-[[bin]]
-name = "test"
-path = "bin/test.rs"
-
 [dependencies]
 cereal-macro = { path = "../cereal-macro" }
 cereal-macro-derive = { path = "../cereal-macro-derive" }

@@ -21,19 +21,39 @@ fn impl_readable_trait(ast: &syn::DeriveInput) -> TokenStream {
 
     let field_name = fields.iter().map(|field| &field.ident);
 
-    TokenStream::from(quote! {
-        impl cereal::Readable for #struct_name {
-            fn from_bytes(mut bytes: &[u8]) -> ::std::io::Result<Self>
-            where
-                Self:Sized {
-                    Ok(#struct_name {
-                        #(
-                            #field_name: cereal::Deserialize::deserialize(&mut bytes)?,
-                        )*
-                    })
+    let gen = if ast.generics.params.is_empty() {
+        quote! {
+            impl cereal::Readable for #struct_name {
+                fn from_bytes(mut bytes: &[u8]) -> ::std::io::Result<Self>
+                where
+                    Self:Sized {
+                        Ok(#struct_name {
+                            #(
+                                #field_name: cereal::Deserialize::deserialize(&mut bytes)?,
+                            )*
+                        })
+                }
             }
         }
-    })
+    } else {
+        let param = ast.generics.params.iter();
+        let param2 = ast.generics.params.iter();
+        quote! {
+            impl<#(#param),*> cereal::Readable for #struct_name<#(#param2),*> {
+                fn from_bytes(mut bytes: &[u8]) -> ::std::io::Result<Self>
+                where
+                    Self:Sized {
+                        Ok(#struct_name {
+                            #(
+                                #field_name: cereal::Deserialize::deserialize(&mut bytes)?,
+                            )*
+                        })
+                }
+            }
+        }
+    };
+
+    gen.into()
 }
 
 #[proc_macro_derive(Writable)]
@@ -55,17 +75,37 @@ fn impl_writable_trait(ast: &syn::DeriveInput) -> TokenStream {
 
     let field_name = fields.iter().map(|field| &field.ident);
 
-    TokenStream::from(quote! {
-        impl cereal::Writable for #struct_name {
-            fn write(&self, bytes: &mut Vec<u8>) -> ::std::io::Result<usize>
-            where
-                Self:Sized {
-                    let mut n = 0;
-                    #(
-                        n += self.#field_name.serialize(bytes)?;
-                    )*
-                    Ok(n)
+    let gen = if ast.generics.params.is_empty() {
+        quote! {
+            impl cereal::Writable for #struct_name {
+                fn write(&self, bytes: &mut Vec<u8>) -> ::std::io::Result<usize>
+                where
+                    Self:Sized {
+                        let mut n = 0;
+                        #(
+                            n += self.#field_name.serialize(bytes)?;
+                        )*
+                        Ok(n)
+                }
             }
         }
-    })
+    } else {
+        let param = ast.generics.params.iter();
+        let param2 = ast.generics.params.iter();
+        quote! {
+            impl<#(#param),*> cereal::Writable for #struct_name<#(#param2),*> {
+                fn write(&self, bytes: &mut Vec<u8>) -> ::std::io::Result<usize>
+                where
+                    Self:Sized {
+                        let mut n = 0;
+                        #(
+                            n += self.#field_name.serialize(bytes)?;
+                        )*
+                        Ok(n)
+                }
+            }
+        }
+    };
+
+    gen.into()
 }

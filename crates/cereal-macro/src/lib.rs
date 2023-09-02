@@ -71,6 +71,15 @@ impl<'de> Deserialize<'de> for &'de str {
     }
 }
 
+impl<'de, T: Readable> Deserialize<'de> for T {
+    fn deserialize(bytes: &mut &'de [u8]) -> io::Result<Self>
+    where
+        Self: Sized,
+    {
+        Self::from_bytes(bytes)
+    }
+}
+
 pub trait Serialize {
     fn serialize(&self, bytes: &mut Vec<u8>) -> io::Result<usize>;
 }
@@ -104,7 +113,7 @@ impl Serialize for str {
         let str_len = str_bytes.len() as u32;
         str_len.serialize(bytes)?;
         bytes.write_all(str_bytes)?;
-        Ok(str_bytes.len())
+        Ok(str_bytes.len() + 4)
     }
 }
 
@@ -118,7 +127,7 @@ impl Serialize for &str {
 impl Serialize for String {
     #[inline]
     fn serialize(&self, bytes: &mut Vec<u8>) -> io::Result<usize> {
-        Serialize::serialize(&self.as_str(), bytes)
+        Serialize::serialize(self.as_str(), bytes)
     }
 }
 

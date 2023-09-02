@@ -1,19 +1,20 @@
-use cereal::{Deserialize, Readable, Writable};
-use cereal_macro::Serialize;
+use crate as cereal;
+use crate::*;
 
-#[derive(Readable, Writable, PartialEq, Eq, Debug)]
-struct Foo {
-    i8: i8,
-    u8: u8,
-    i16: i16,
-    u16: u16,
-    i32: i32,
-    u32: u32,
-    i64: i64,
-    u64: u64,
-}
+#[test]
+fn foo() {
+    #[derive(Readable, Writable, PartialEq, Eq, Debug)]
+    struct Foo {
+        i8: i8,
+        u8: u8,
+        i16: i16,
+        u16: u16,
+        i32: i32,
+        u32: u32,
+        i64: i64,
+        u64: u64,
+    }
 
-fn main() {
     let input = Foo {
         i8: -42,
         u8: 42,
@@ -26,12 +27,29 @@ fn main() {
     };
     let mut bytes = vec![];
     let n = input.write(&mut bytes).unwrap();
-    println!("n={n}");
+    assert_eq!(n, 30);
     let output = Foo::from_bytes(&bytes).unwrap();
     assert_eq!(input, output);
 }
 
-#[allow(dead_code)]
+#[test]
+fn struct_with_string() {
+    #[derive(Readable, Writable, Debug, PartialEq, Eq)]
+    struct Foo {
+        name: String,
+    }
+
+    let input = Foo {
+        name: "hello".to_owned(),
+    };
+    let mut bytes = vec![];
+    let n = input.write(&mut bytes).unwrap();
+    assert_eq!(n, 9);
+    let output = Foo::from_bytes(&bytes).unwrap();
+    assert_eq!(input, output);
+}
+
+#[test]
 fn manual_test() {
     let mut bytes = vec![];
     Serialize::serialize(&1337_i32, &mut bytes).unwrap();
