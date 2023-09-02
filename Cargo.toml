@@ -3,7 +3,6 @@
 members = [
   "crates/cereal",
   "crates/cereal-macro",
-  "crates/cereal-macro-derive"
 ]
 
 [profile.release]

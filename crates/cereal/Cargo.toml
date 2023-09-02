@@ -5,4 +5,5 @@ edition = "2021"
 
 [dependencies]
 cereal-macro = { path = "../cereal-macro" }
-cereal-macro-derive = { path = "../cereal-macro-derive" }
+quote = "1.0.33"
+syn = "2.0.29"

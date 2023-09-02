@@ -1,139 +1,111 @@
-use std::io;
-use std::io::{Read, Write};
+use proc_macro::TokenStream;
+use quote::quote;
+use syn::{Data, DataStruct, Fields};
 
-pub trait Writable {
-    fn write(&self, bytes: &mut Vec<u8>) -> io::Result<usize>;
+#[proc_macro_derive(Readable)]
+pub fn derive_readable(input: TokenStream) -> TokenStream {
+    let ast = syn::parse(input).unwrap();
+    impl_readable_trait(&ast)
 }
 
-pub trait Readable {
-    fn from_bytes(bytes: &[u8]) -> io::Result<Self>
-    where
-        Self: Sized;
-}
+fn impl_readable_trait(ast: &syn::DeriveInput) -> TokenStream {
+    let struct_name = &ast.ident;
 
-pub trait Deserialize<'de> {
-    fn deserialize(bytes: &mut &'de [u8]) -> io::Result<Self>
-    where
-        Self: Sized;
-}
+    let fields = match &ast.data {
+        Data::Struct(DataStruct {
+            fields: Fields::Named(fields),
+            ..
+        }) => &fields.named,
+        _ => panic!("not unhandled yet (only struct fields are handled)"),
+    };
 
-macro_rules! deserialize_impl {
-    ($ty:ident, $size:expr) => {
-        impl<'de> Deserialize<'de> for $ty {
-            fn deserialize(bytes: &mut &'de [u8]) -> io::Result<Self>
-            where
-                Self: Sized,
-            {
-                let mut buf = [0u8; $size];
-                bytes.read_exact(&mut buf)?;
-                Ok($ty::from_le_bytes(buf))
+    let field_name = fields.iter().map(|field| &field.ident);
+
+    let gen = if ast.generics.params.is_empty() {
+        quote! {
+            impl cereal::Readable for #struct_name {
+                fn from_bytes(mut bytes: &[u8]) -> ::std::io::Result<Self>
+                where
+                    Self:Sized {
+                        Ok(#struct_name {
+                            #(
+                                #field_name: cereal::Deserialize::deserialize(&mut bytes)?,
+                            )*
+                        })
+                }
+            }
+        }
+    } else {
+        let param = ast.generics.params.iter();
+        let param2 = ast.generics.params.iter();
+        quote! {
+            impl<#(#param),*> cereal::Readable for #struct_name<#(#param2),*> {
+                fn from_bytes(mut bytes: &[u8]) -> ::std::io::Result<Self>
+                where
+                    Self:Sized {
+                        Ok(#struct_name {
+                            #(
+                                #field_name: cereal::Deserialize::deserialize(&mut bytes)?,
+                            )*
+                        })
+                }
             }
         }
     };
+
+    gen.into()
 }
 
-deserialize_impl!(i8, 1);
-deserialize_impl!(u8, 1);
-deserialize_impl!(i16, 2);
-deserialize_impl!(u16, 2);
-deserialize_impl!(i32, 4);
-deserialize_impl!(u32, 4);
-deserialize_impl!(f32, 4);
-deserialize_impl!(i64, 8);
-deserialize_impl!(u64, 8);
-deserialize_impl!(f64, 8);
-
-impl<'de> Deserialize<'de> for String {
-    fn deserialize(bytes: &mut &'de [u8]) -> io::Result<Self>
-    where
-        Self: Sized,
-    {
-        let len = u32::deserialize(bytes)? as usize;
-        let mut buf = vec![0u8; len];
-        bytes.read_exact(&mut buf)?;
-        let string =
-            String::from_utf8(buf).map_err(|err| io::Error::new(io::ErrorKind::Other, err))?;
-
-        Ok(string)
-    }
+#[proc_macro_derive(Writable)]
+pub fn derive_writable(input: TokenStream) -> TokenStream {
+    let ast = syn::parse(input).unwrap();
+    impl_writable_trait(&ast)
 }
 
-impl<'de> Deserialize<'de> for &'de str {
-    fn deserialize(bytes: &mut &'de [u8]) -> io::Result<Self>
-    where
-        Self: Sized,
-    {
-        let len = u32::deserialize(bytes)? as usize;
-        let str = std::str::from_utf8(&bytes[..len])
-            .map_err(|err| io::Error::new(io::ErrorKind::Other, err))?;
-        *bytes = &bytes[len..];
-        Ok(str)
-    }
-}
+fn impl_writable_trait(ast: &syn::DeriveInput) -> TokenStream {
+    let struct_name = &ast.ident;
 
-impl<'de, T: Readable> Deserialize<'de> for T {
-    fn deserialize(bytes: &mut &'de [u8]) -> io::Result<Self>
-    where
-        Self: Sized,
-    {
-        Self::from_bytes(bytes)
-    }
-}
+    let fields = match &ast.data {
+        Data::Struct(DataStruct {
+            fields: Fields::Named(fields),
+            ..
+        }) => &fields.named,
+        _ => panic!("not unhandled yet (only struct fields are handled)"),
+    };
 
-pub trait Serialize {
-    fn serialize(&self, bytes: &mut Vec<u8>) -> io::Result<usize>;
-}
+    let field_name = fields.iter().map(|field| &field.ident);
 
-macro_rules! serialize_impl {
-    ($ty:ident) => {
-        impl Serialize for $ty {
-            fn serialize(&self, bytes: &mut Vec<u8>) -> io::Result<usize> {
-                let buf = self.to_le_bytes();
-                bytes.write_all(&buf)?;
-                Ok(buf.len())
+    let gen = if ast.generics.params.is_empty() {
+        quote! {
+            impl cereal::Writable for #struct_name {
+                fn write(&self, bytes: &mut Vec<u8>) -> ::std::io::Result<usize>
+                where
+                    Self:Sized {
+                        let mut n = 0;
+                        #(
+                            n += self.#field_name.serialize(bytes)?;
+                        )*
+                        Ok(n)
+                }
+            }
+        }
+    } else {
+        let param = ast.generics.params.iter();
+        let param2 = ast.generics.params.iter();
+        quote! {
+            impl<#(#param),*> cereal::Writable for #struct_name<#(#param2),*> {
+                fn write(&self, bytes: &mut Vec<u8>) -> ::std::io::Result<usize>
+                where
+                    Self:Sized {
+                        let mut n = 0;
+                        #(
+                            n += self.#field_name.serialize(bytes)?;
+                        )*
+                        Ok(n)
+                }
             }
         }
     };
-}
 
-serialize_impl!(i8);
-serialize_impl!(u8);
-serialize_impl!(i16);
-serialize_impl!(u16);
-serialize_impl!(i32);
-serialize_impl!(u32);
-serialize_impl!(f32);
-serialize_impl!(i64);
-serialize_impl!(u64);
-serialize_impl!(f64);
-
-impl Serialize for str {
-    fn serialize(&self, bytes: &mut Vec<u8>) -> io::Result<usize> {
-        let str_bytes = self.as_bytes();
-        let str_len = str_bytes.len() as u32;
-        str_len.serialize(bytes)?;
-        bytes.write_all(str_bytes)?;
-        Ok(str_bytes.len() + 4)
-    }
-}
-
-impl Serialize for &str {
-    #[inline]
-    fn serialize(&self, bytes: &mut Vec<u8>) -> io::Result<usize> {
-        Serialize::serialize(*self, bytes)
-    }
-}
-
-impl Serialize for String {
-    #[inline]
-    fn serialize(&self, bytes: &mut Vec<u8>) -> io::Result<usize> {
-        Serialize::serialize(self.as_str(), bytes)
-    }
-}
-
-impl<T: Writable> Serialize for T {
-    #[inline]
-    fn serialize(&self, bytes: &mut Vec<u8>) -> io::Result<usize> {
-        self.write(bytes)
-    }
+    gen.into()
 }
