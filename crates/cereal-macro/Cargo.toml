@@ -1,0 +1,9 @@
+[package]
+name = "cereal-macro"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+# cereal = { path = "../cereal" }
+quote = "1.0.33"
+syn = "2.0.29"

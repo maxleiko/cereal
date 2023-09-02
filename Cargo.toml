@@ -1,0 +1,13 @@
+[workspace]
+
+members = [
+  "crates/cereal",
+  "crates/cereal-macro",
+  "crates/cereal-macro-derive"
+]
+
+[profile.release]
+opt-level = 's'
+lto = "thin"
+strip = 'symbols'
+# panic = 'abort'
