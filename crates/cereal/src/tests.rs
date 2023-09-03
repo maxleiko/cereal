@@ -87,3 +87,20 @@ fn generic() {
     let output = Foo::deserialize(&mut &*bytes).unwrap();
     assert_eq!(input, output);
 }
+
+#[test]
+fn vec_as_field() {
+    #[derive(Serialize, Deserialize, PartialEq, Eq, Debug)]
+    struct Foo {
+        field: Vec<i32>,
+    }
+
+    let input = Foo {
+        field: vec![-10, -5, 0, 5, 10],
+    };
+    let mut bytes = vec![];
+    let n = input.serialize(&mut bytes).unwrap();
+    assert_eq!(n, 6);
+    let output = Foo::deserialize(&mut &*bytes).unwrap();
+    assert_eq!(input, output);
+}

@@ -45,6 +45,8 @@ deserialize_varint_impl!(i32);
 deserialize_varint_impl!(u32);
 deserialize_varint_impl!(i64);
 deserialize_varint_impl!(u64);
+deserialize_varint_impl!(usize);
+deserialize_varint_impl!(isize);
 
 impl<'de> Deserialize<'de> for String {
     fn deserialize(bytes: &mut &'de [u8]) -> io::Result<Self>
@@ -80,5 +82,19 @@ impl<'de> Deserialize<'de> for bool {
         let b = bytes[0] != 0;
         *bytes = &bytes[1..];
         Ok(b)
+    }
+}
+
+impl<'de, T: Deserialize<'de>> Deserialize<'de> for Vec<T> {
+    fn deserialize(bytes: &mut &'de [u8]) -> io::Result<Self>
+    where
+        Self: Sized,
+    {
+        let len: usize = Deserialize::deserialize(bytes)?;
+        let mut vec = Vec::with_capacity(len);
+        for _ in 0..len {
+            vec.push(Deserialize::deserialize(bytes)?);
+        }
+        Ok(vec)
     }
 }
