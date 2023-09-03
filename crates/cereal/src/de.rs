@@ -66,6 +66,20 @@ impl<'de> Deserialize<'de> for &'de str {
     }
 }
 
+impl<'de> Deserialize<'de> for bool {
+    fn deserialize(bytes: &mut &'de [u8]) -> io::Result<Self>
+    where
+        Self: Sized,
+    {
+        if bytes.is_empty() {
+            return Err(io::Error::new(io::ErrorKind::UnexpectedEof, "reached EOF"));
+        }
+        let b = bytes[0] != 0;
+        *bytes = &bytes[1..];
+        Ok(b)
+    }
+}
+
 impl<'de, T: Readable> Deserialize<'de> for T {
     fn deserialize(bytes: &mut &'de [u8]) -> io::Result<Self>
     where

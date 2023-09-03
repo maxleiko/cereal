@@ -3,7 +3,7 @@ use crate::*;
 
 #[test]
 fn foo() {
-    #[derive(Readable, Writable, PartialEq, Eq, Debug)]
+    #[derive(Readable, Serialize, PartialEq, Eq, Debug)]
     struct Foo {
         i8: i8,
         u8: u8,
@@ -26,7 +26,7 @@ fn foo() {
         u64: 200_000_000,
     };
     let mut bytes = vec![];
-    let n = input.write(&mut bytes).unwrap();
+    let n = input.serialize(&mut bytes).unwrap();
     assert_eq!(n, 30);
     let output = Foo::from_bytes(&bytes).unwrap();
     assert_eq!(input, output);
@@ -34,7 +34,7 @@ fn foo() {
 
 #[test]
 fn struct_with_string() {
-    #[derive(Readable, Writable, Debug, PartialEq, Eq)]
+    #[derive(Readable, Serialize, Debug, PartialEq, Eq)]
     struct Foo {
         name: String,
     }
@@ -43,7 +43,7 @@ fn struct_with_string() {
         name: "hello".to_owned(),
     };
     let mut bytes = vec![];
-    let n = input.write(&mut bytes).unwrap();
+    let n = input.serialize(&mut bytes).unwrap();
     assert_eq!(n, 9);
     let output = Foo::from_bytes(&bytes).unwrap();
     assert_eq!(input, output);
