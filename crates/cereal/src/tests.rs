@@ -3,7 +3,7 @@ use crate::*;
 
 #[test]
 fn foo() {
-    #[derive(Deserialize, Serialize, PartialEq, Eq, Debug)]
+    #[derive(Serialize, Deserialize, PartialEq, Eq, Debug)]
     struct Foo {
         i8: i8,
         u8: u8,
@@ -34,7 +34,7 @@ fn foo() {
 
 #[test]
 fn struct_with_string() {
-    #[derive(Deserialize, Serialize, Debug, PartialEq, Eq)]
+    #[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
     struct Foo {
         name: String,
     }
