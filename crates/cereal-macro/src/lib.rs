@@ -38,8 +38,12 @@ fn impl_deserialize_trait(ast: &syn::DeriveInput) -> TokenStream {
     } else {
         let param = ast.generics.params.iter();
         let param2 = ast.generics.params.iter();
+        let param3 = ast.generics.params.iter();
         quote! {
-            impl<'de, #(#param),*> cereal::Deserialize<'de> for #struct_name<#(#param2),*> {
+            impl<'de, #(#param),*> cereal::Deserialize<'de> for #struct_name<#(#param2),*>
+            where
+                #(#param3: cereal::Deserialize<'de>),*
+            {
                 fn deserialize(mut bytes: &mut &'de [u8]) -> ::std::io::Result<Self>
                 where
                     Self:Sized {
@@ -93,8 +97,12 @@ fn impl_serialize_trait(ast: &syn::DeriveInput) -> TokenStream {
     } else {
         let param = ast.generics.params.iter();
         let param2 = ast.generics.params.iter();
+        let param3 = ast.generics.params.iter();
         quote! {
-            impl<#(#param),*> cereal::Serialize for #struct_name<#(#param2),*> {
+            impl<#(#param),*> cereal::Serialize for #struct_name<#(#param2),*>
+            where
+                #(#param3: cereal::Serialize),*
+            {
                 fn serialize<W>(&self, mut bytes: W) -> ::std::io::Result<usize>
                 where
                     Self:Sized,

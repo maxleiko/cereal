@@ -70,3 +70,20 @@ fn varint() {
     let result: i64 = Deserialize::deserialize(bytes).unwrap();
     assert_eq!(result, 655957);
 }
+
+#[test]
+fn generic() {
+    #[derive(Serialize, Deserialize, PartialEq, Eq, Debug)]
+    struct Foo<T> {
+        field: T,
+    }
+
+    let input = Foo {
+        field: "hello world",
+    };
+    let mut bytes = vec![];
+    let n = input.serialize(&mut bytes).unwrap();
+    assert_eq!(n, 12);
+    let output = Foo::deserialize(&mut &*bytes).unwrap();
+    assert_eq!(input, output);
+}

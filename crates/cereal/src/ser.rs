@@ -48,7 +48,6 @@ serialize_varint_impl!(u32);
 serialize_varint_impl!(i64);
 serialize_varint_impl!(u64);
 
-
 impl Serialize for bool {
     fn serialize<W>(&self, mut bytes: W) -> io::Result<usize>
     where
