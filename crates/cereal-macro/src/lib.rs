@@ -49,10 +49,10 @@ fn impl_deserialize_trait(ast: &syn::DeriveInput) -> TokenStream {
             .iter()
             .filter(|param| matches!(param, syn::GenericParam::Type(_)));
         quote! {
-            impl<'de, #(#param),*> cereal::Deserialize<'de> for #struct_name<#(#param2),*>
+            impl<'de, #(#param,)*> cereal::Deserialize<'de> for #struct_name<#(#param2,)*>
             where
-                #('de :#lifetime),*
-                #(#type_param: cereal::Deserialize<'de>),*
+                #('de :#lifetime,)*
+                #(#type_param: cereal::Deserialize<'de>,)*
             {
                 fn deserialize(mut bytes: &mut &'de [u8]) -> ::std::io::Result<Self>
                 where
@@ -113,9 +113,9 @@ fn impl_serialize_trait(ast: &syn::DeriveInput) -> TokenStream {
             .iter()
             .filter(|param| matches!(param, syn::GenericParam::Type(_)));
         quote! {
-            impl<#(#param),*> cereal::Serialize for #struct_name<#(#param2),*>
+            impl<#(#param,)*> cereal::Serialize for #struct_name<#(#param2,)*>
             where
-                #(#type_param: cereal::Serialize),*
+                #(#type_param: cereal::Serialize,)*
             {
                 fn serialize<W>(&self, mut bytes: W) -> ::std::io::Result<usize>
                 where

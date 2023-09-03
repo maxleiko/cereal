@@ -119,3 +119,24 @@ fn explicit_lifetime() {
     let output = Foo::deserialize(&mut &*bytes).unwrap();
     assert_eq!(input, output);
 }
+
+#[test]
+fn explicit_lifetimes_and_generic() {
+    #[derive(Serialize, Deserialize, PartialEq, Eq, Debug)]
+    struct Foo<'a, 'b, T> {
+        msg0: &'a str,
+        msg1: &'b str,
+        msg2: T,
+    }
+
+    let input = Foo {
+        msg0: "hello",
+        msg1: "world",
+        msg2: 42,
+    };
+    let mut bytes = vec![];
+    let n = input.serialize(&mut bytes).unwrap();
+    assert_eq!(n, 13);
+    let output = Foo::deserialize(&mut &*bytes).unwrap();
+    assert_eq!(input, output);
+}
