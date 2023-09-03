@@ -18,8 +18,8 @@ fn foo() {
     let input = Foo {
         i8: -42,
         u8: 42,
-        i16: -1337,
-        u16: 1337,
+        i16: -2,
+        u16: 4,
         i32: -655957,
         u32: 655957,
         i64: -200_000_000,
@@ -27,7 +27,7 @@ fn foo() {
     };
     let mut bytes = vec![];
     let n = input.serialize(&mut bytes).unwrap();
-    assert_eq!(n, 30);
+    assert_eq!(n, 19);
     let output = Foo::deserialize(&mut &*bytes).unwrap();
     assert_eq!(input, output);
 }
@@ -44,7 +44,7 @@ fn struct_with_string() {
     };
     let mut bytes = vec![];
     let n = input.serialize(&mut bytes).unwrap();
-    assert_eq!(n, 9);
+    assert_eq!(n, 6);
     let output = Foo::deserialize(&mut &*bytes).unwrap();
     assert_eq!(input, output);
 }
@@ -57,7 +57,16 @@ fn manual_test() {
     let bytes = &mut bytes.as_slice();
     let first: i32 = Deserialize::deserialize(bytes).unwrap();
     let second: &str = Deserialize::deserialize(bytes).unwrap();
+    assert_eq!(first, 1337);
+    assert_eq!(second, "hello world");
+}
 
-    println!("first={first}");
-    println!("second={second}");
+#[test]
+fn varint() {
+    let mut bytes = vec![];
+    let n = Serialize::serialize(&655957_i64, &mut bytes).unwrap();
+    assert_eq!(n, 3);
+    let bytes = &mut &*bytes;
+    let result: i64 = Deserialize::deserialize(bytes).unwrap();
+    assert_eq!(result, 655957);
 }

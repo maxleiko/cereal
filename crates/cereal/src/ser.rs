@@ -21,16 +21,33 @@ macro_rules! serialize_impl {
     };
 }
 
+macro_rules! serialize_varint_impl {
+    ($ty:ident) => {
+        impl Serialize for $ty {
+            fn serialize<W>(&self, mut bytes: W) -> io::Result<usize>
+            where
+                W: Write,
+            {
+                integer_encoding::VarIntWriter::write_varint(&mut bytes, *self)
+            }
+        }
+    };
+}
+
 serialize_impl!(i8);
 serialize_impl!(u8);
-serialize_impl!(i16);
-serialize_impl!(u16);
-serialize_impl!(i32);
-serialize_impl!(u32);
 serialize_impl!(f32);
-serialize_impl!(i64);
-serialize_impl!(u64);
 serialize_impl!(f64);
+serialize_impl!(usize);
+serialize_impl!(isize);
+
+serialize_varint_impl!(i16);
+serialize_varint_impl!(u16);
+serialize_varint_impl!(i32);
+serialize_varint_impl!(u32);
+serialize_varint_impl!(i64);
+serialize_varint_impl!(u64);
+
 
 impl Serialize for bool {
     fn serialize<W>(&self, mut bytes: W) -> io::Result<usize>
@@ -49,10 +66,11 @@ impl Serialize for str {
         W: Write,
     {
         let str_bytes = self.as_bytes();
-        let str_len = str_bytes.len() as u32;
-        str_len.serialize(&mut bytes)?;
+        let str_len = str_bytes.len();
+        let mut n = integer_encoding::VarIntWriter::write_varint(&mut bytes, str_len as u32)?;
         bytes.write_all(str_bytes)?;
-        Ok(str_bytes.len() + 4)
+        n += str_len;
+        Ok(n)
     }
 }
 

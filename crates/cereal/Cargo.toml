@@ -5,5 +5,6 @@ edition = "2021"
 
 [dependencies]
 cereal-macro = { path = "../cereal-macro" }
+integer-encoding = "4.0.0"
 quote = "1.0.33"
 syn = "2.0.29"

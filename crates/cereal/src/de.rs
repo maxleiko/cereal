@@ -21,29 +21,38 @@ macro_rules! deserialize_impl {
     };
 }
 
+macro_rules! deserialize_varint_impl {
+    ($ty:ident) => {
+        impl<'de> Deserialize<'de> for $ty {
+            fn deserialize(bytes: &mut &'de [u8]) -> io::Result<Self>
+            where
+                Self: Sized,
+            {
+                integer_encoding::VarIntReader::read_varint::<$ty>(bytes)
+            }
+        }
+    };
+}
+
 deserialize_impl!(i8, 1);
 deserialize_impl!(u8, 1);
-deserialize_impl!(i16, 2);
-deserialize_impl!(u16, 2);
-deserialize_impl!(i32, 4);
-deserialize_impl!(u32, 4);
 deserialize_impl!(f32, 4);
-deserialize_impl!(i64, 8);
-deserialize_impl!(u64, 8);
 deserialize_impl!(f64, 8);
+
+deserialize_varint_impl!(i16);
+deserialize_varint_impl!(u16);
+deserialize_varint_impl!(i32);
+deserialize_varint_impl!(u32);
+deserialize_varint_impl!(i64);
+deserialize_varint_impl!(u64);
 
 impl<'de> Deserialize<'de> for String {
     fn deserialize(bytes: &mut &'de [u8]) -> io::Result<Self>
     where
         Self: Sized,
     {
-        let len = u32::deserialize(bytes)? as usize;
-        let mut buf = vec![0u8; len];
-        bytes.read_exact(&mut buf)?;
-        let string =
-            String::from_utf8(buf).map_err(|err| io::Error::new(io::ErrorKind::Other, err))?;
-
-        Ok(string)
+        let str: &str = Deserialize::deserialize(bytes)?;
+        Ok(str.to_owned())
     }
 }
 
@@ -52,7 +61,7 @@ impl<'de> Deserialize<'de> for &'de str {
     where
         Self: Sized,
     {
-        let len = u32::deserialize(bytes)? as usize;
+        let len = integer_encoding::VarIntReader::read_varint::<u32>(bytes)? as usize;
         let str = std::str::from_utf8(&bytes[..len])
             .map_err(|err| io::Error::new(io::ErrorKind::Other, err))?;
         *bytes = &bytes[len..];
