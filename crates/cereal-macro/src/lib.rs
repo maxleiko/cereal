@@ -2,13 +2,13 @@ use proc_macro::TokenStream;
 use quote::quote;
 use syn::{Data, DataStruct, Fields};
 
-#[proc_macro_derive(Readable)]
-pub fn derive_readable(input: TokenStream) -> TokenStream {
+#[proc_macro_derive(Deserialize)]
+pub fn derive_deserialize(input: TokenStream) -> TokenStream {
     let ast = syn::parse(input).unwrap();
-    impl_readable_trait(&ast)
+    impl_deserialize_trait(&ast)
 }
 
-fn impl_readable_trait(ast: &syn::DeriveInput) -> TokenStream {
+fn impl_deserialize_trait(ast: &syn::DeriveInput) -> TokenStream {
     let struct_name = &ast.ident;
 
     let fields = match &ast.data {
@@ -23,13 +23,13 @@ fn impl_readable_trait(ast: &syn::DeriveInput) -> TokenStream {
 
     let gen = if ast.generics.params.is_empty() {
         quote! {
-            impl cereal::Readable for #struct_name {
-                fn from_bytes(mut bytes: &[u8]) -> ::std::io::Result<Self>
+            impl<'de> cereal::Deserialize<'de> for #struct_name {
+                fn deserialize(bytes: &mut &'de [u8]) -> ::std::io::Result<Self>
                 where
                     Self:Sized {
                         Ok(#struct_name {
                             #(
-                                #field_name: cereal::Deserialize::deserialize(&mut bytes)?,
+                                #field_name: cereal::Deserialize::deserialize(bytes)?,
                             )*
                         })
                 }
@@ -39,13 +39,13 @@ fn impl_readable_trait(ast: &syn::DeriveInput) -> TokenStream {
         let param = ast.generics.params.iter();
         let param2 = ast.generics.params.iter();
         quote! {
-            impl<#(#param),*> cereal::Readable for #struct_name<#(#param2),*> {
-                fn from_bytes(mut bytes: &[u8]) -> ::std::io::Result<Self>
+            impl<'de, #(#param),*> cereal::Deserialize<'de> for #struct_name<#(#param2),*> {
+                fn deserialize(mut bytes: &mut &'de [u8]) -> ::std::io::Result<Self>
                 where
                     Self:Sized {
                         Ok(#struct_name {
                             #(
-                                #field_name: cereal::Deserialize::deserialize(&mut bytes)?,
+                                #field_name: cereal::Deserialize::deserialize(bytes)?,
                             )*
                         })
                 }

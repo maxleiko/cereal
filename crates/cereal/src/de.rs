@@ -1,11 +1,5 @@
 use std::io::{self, Read};
 
-pub trait Readable {
-    fn from_bytes(bytes: &[u8]) -> std::io::Result<Self>
-    where
-        Self: Sized;
-}
-
 pub trait Deserialize<'de> {
     fn deserialize(bytes: &mut &'de [u8]) -> io::Result<Self>
     where
@@ -77,14 +71,5 @@ impl<'de> Deserialize<'de> for bool {
         let b = bytes[0] != 0;
         *bytes = &bytes[1..];
         Ok(b)
-    }
-}
-
-impl<'de, T: Readable> Deserialize<'de> for T {
-    fn deserialize(bytes: &mut &'de [u8]) -> io::Result<Self>
-    where
-        Self: Sized,
-    {
-        Self::from_bytes(bytes)
     }
 }
