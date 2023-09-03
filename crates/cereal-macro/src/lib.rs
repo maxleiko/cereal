@@ -36,13 +36,23 @@ fn impl_deserialize_trait(ast: &syn::DeriveInput) -> TokenStream {
             }
         }
     } else {
+        let lifetime = ast
+            .generics
+            .params
+            .iter()
+            .filter(|param| matches!(param, syn::GenericParam::Lifetime(_)));
         let param = ast.generics.params.iter();
         let param2 = ast.generics.params.iter();
-        let param3 = ast.generics.params.iter();
+        let type_param = ast
+            .generics
+            .params
+            .iter()
+            .filter(|param| matches!(param, syn::GenericParam::Type(_)));
         quote! {
             impl<'de, #(#param),*> cereal::Deserialize<'de> for #struct_name<#(#param2),*>
             where
-                #(#param3: cereal::Deserialize<'de>),*
+                #('de :#lifetime),*
+                #(#type_param: cereal::Deserialize<'de>),*
             {
                 fn deserialize(mut bytes: &mut &'de [u8]) -> ::std::io::Result<Self>
                 where
@@ -97,11 +107,15 @@ fn impl_serialize_trait(ast: &syn::DeriveInput) -> TokenStream {
     } else {
         let param = ast.generics.params.iter();
         let param2 = ast.generics.params.iter();
-        let param3 = ast.generics.params.iter();
+        let type_param = ast
+            .generics
+            .params
+            .iter()
+            .filter(|param| matches!(param, syn::GenericParam::Type(_)));
         quote! {
             impl<#(#param),*> cereal::Serialize for #struct_name<#(#param2),*>
             where
-                #(#param3: cereal::Serialize),*
+                #(#type_param: cereal::Serialize),*
             {
                 fn serialize<W>(&self, mut bytes: W) -> ::std::io::Result<usize>
                 where

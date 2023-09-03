@@ -104,3 +104,18 @@ fn vec_as_field() {
     let output = Foo::deserialize(&mut &*bytes).unwrap();
     assert_eq!(input, output);
 }
+
+#[test]
+fn explicit_lifetime() {
+    #[derive(Serialize, Deserialize, PartialEq, Eq, Debug)]
+    struct Foo<'a> {
+        msg: &'a str,
+    }
+
+    let input = Foo { msg: "hello" };
+    let mut bytes = vec![];
+    let n = input.serialize(&mut bytes).unwrap();
+    assert_eq!(n, 6);
+    let output = Foo::deserialize(&mut &*bytes).unwrap();
+    assert_eq!(input, output);
+}
